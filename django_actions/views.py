@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
-from django.http import HttpResponseForbidden
-from django.shortcuts import redirect
+from django.http import HttpResponseRedirect, HttpResponseForbidden
 
 
 class ActionViewMixin(object):
@@ -28,16 +27,15 @@ class ActionViewMixin(object):
         get_result = self.get(request, *args, **kwargs)
         qs = get_result.context_data['_whole_object_list']
 
+        if qs is None:
+            print(qs)
+
         if request.POST['action'] and request.POST['action'] != u'-1':
             # Checking if we're going to use all qset or only selected items
             if 'select-across' in request.POST and 'action-select' in request.POST:
                 if request.POST['select-across'] == u'0':
-                    if request.POST['select-first-n'] == u'0':
-                        # select a specific set of items
-                        qs = qs.filter(pk__in=(request.POST.getlist('action-select')))
-                    else:
-                        # select first `select-first-n` items
-                        qs = qs.model.objects.filter(pk__in=[__.pk for __ in qs[:int(request.POST['select-first-n'])]])
+                    # select a specific set of items
+                    qs = qs.filter(pk__in=(request.POST.getlist('action-select')))
 
                 validated_actions = []
                 for action in self.actions:
@@ -54,5 +52,4 @@ class ActionViewMixin(object):
                     return HttpResponseForbidden()
 
                 return action_to_execute(self, qs)
-
-        return redirect(request.META.get('HTTP_REFERER') or '.')
+        return HttpResponseRedirect('.')
